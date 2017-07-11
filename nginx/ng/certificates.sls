@@ -3,13 +3,15 @@
 include:
   - nginx.ng.service
 
-{%- for dh_param, value in salt.pillar.get('nginx:ng:dh_param').items() %}
+{%- for dh_param, value in salt['pillar.get']('nginx:ng:dh_param', {}).items() %}
 {%- if value is string %}
 create_nginx_dhparam_{{ dh_param }}_key:
   file.managed:
     - name: /etc/nginx/ssl/{{ dh_param }}
-    - contents_pillar: nginx:ng:dh_param::{{ dh_param }}
+    - contents_pillar: nginx:ng:dh_param:{{ dh_param }}
     - makedirs: True
+    - watch_in:
+      - service: nginx_service
 {%- else %}
 generate_nginx_dhparam_{{ dh_param }}_key:
   pkg.installed:
@@ -21,6 +23,8 @@ generate_nginx_dhparam_{{ dh_param }}_key:
     - name: openssl dhparam -out {{ dh_param }} {{ value.get('keysize', 2048) }}
     - cwd: /etc/nginx/ssl
     - creates: /etc/nginx/ssl/{{ dh_param }}
+    - watch_in:
+      - service: nginx_service
 {%- endif %}
 {%- endfor %}
 
