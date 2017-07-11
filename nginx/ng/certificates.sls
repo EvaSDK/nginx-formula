@@ -3,24 +3,26 @@
 include:
   - nginx.ng.service
 
-{% if salt.pillar.get('nginx:ng:dh_contents') %}
-create_nginx_dhparam_key:
+{%- for dh_param, value in salt.pillar.get('nginx:ng:dh_param').items() %}
+{%- if value is string %}
+create_nginx_dhparam_{{ dh_param }}_key:
   file.managed:
-    - name: /etc/nginx/ssl/dhparam.pem
-    - contents_pillar: nginx:ng:dh_contents
+    - name: /etc/nginx/ssl/{{ dh_param }}
+    - contents_pillar: nginx:ng:dh_param::{{ dh_param }}
     - makedirs: True
-{% elif salt.pillar.get('nginx:ng:dh_keygen', False) %}
-generate_nginx_dhparam_key:
+{%- else %}
+generate_nginx_dhparam_{{ dh_param }}_key:
   pkg.installed:
     - name: {{ nginx.lookup.openssl_package }}
   file.directory:
     - name: /etc/nginx/ssl
     - makedirs: True
   cmd.run:
-    - name: openssl dhparam -out dhparam.pem {{ salt.pillar.get('nginx:ng:dh_keysize', 2048) }}
+    - name: openssl dhparam -out {{ dh_param }} {{ value.get('keysize', 2048) }}
     - cwd: /etc/nginx/ssl
-    - creates: /etc/nginx/ssl/dhparam.pem
-{% endif %}
+    - creates: /etc/nginx/ssl/{{ dh_param }}
+{%- endif %}
+{%- endfor %}
 
 {%- for domain in salt['pillar.get']('nginx:ng:certificates', {}).keys() %}
 
