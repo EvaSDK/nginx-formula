@@ -1,3 +1,5 @@
+{% from 'nginx/ng/map.jinja' import nginx with context %}
+
 include:
   - nginx.ng.service
 
@@ -9,6 +11,8 @@ create_nginx_dhparam_key:
     - makedirs: True
 {% elif salt.pillar.get('nginx:ng:dh_keygen', False) %}
 generate_nginx_dhparam_key:
+  pkg.installed:
+    - name: {{ nginx.lookup.openssl_package }}
   file.directory:
     - name: /etc/nginx/ssl
     - makedirs: True
